@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}System Error - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 60px 20px;">
+  <h1 style="font-size: 4rem; color: var(--accent-gold); font-weight: 800;">500</h1>
+  <h2 style="font-size: 1.5rem; color: var(--text-dark); margin: 12px 0;">Internal Server Error</h2>
+  <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 24px;">
+    An unexpected error occurred while processing the MongoDB database query. Please check application logs or retry.
+  </p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Return to Dashboard</a>
+</div>
+{% endblock %}

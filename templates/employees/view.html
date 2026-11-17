@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ emp.full_name }} - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 class="page-title">{{ emp.full_name }}</h1>
+      <span class="badge 
+        {% if emp.status == 'Active' %}badge-success
+        {% elif emp.status == 'On Leave' %}badge-warning
+        {% else %}badge-neutral{% endif %}">
+        {{ emp.status }}
+      </span>
+    </div>
+    <p class="page-desc">Code: <code>{{ emp.employee_code }}</code> • {{ emp.job_title }} ({{ emp.department }})</p>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('employees.index') }}" class="btn btn-outline">&larr; Back to Employees</a>
+    {% if current_role in ['Administrator', 'Farm Manager'] %}
+    <a href="{{ url_for('employees.edit', emp_id=str(emp._id)) }}" class="btn btn-outline" style="color: var(--primary);">Edit Profile</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">💰</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Monthly Wage</div>
+      <div class="kpi-value" style="font-size: 1.15rem; color: var(--primary);">
+        {% if current_role in ['Administrator', 'Farm Manager'] %}
+          {{ emp.monthly_salary_ugx | ugx }}
+        {% else %}
+          Confidential
+        {% endif %}
+      </div>
+      <div class="kpi-sub">Standard Monthly Base</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">📞</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Phone Contact</div>
+      <div class="kpi-value" style="font-size: 1.1rem;">{{ emp.phone }}</div>
+      <div class="kpi-sub">{{ emp.email or 'No email' }}</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">📅</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Date Employed</div>
+      <div class="kpi-value" style="font-size: 1.1rem;">{{ emp.hire_date or 'Recent' }}</div>
+      <div class="kpi-sub">NIN: {{ emp.national_id or 'On file' }}</div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <!-- Left Column: Tasks & Salary Payment History -->
+  <div>
+    <!-- Assigned Farm Duties / Tasks -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h3 class="card-title">Assigned Farm Duties & Work Orders</h3>
+        <span class="badge badge-neutral">{{ tasks|length }} Tasks</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Category</th>
+              <th>Priority</th>
+              <th>Due Date</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if tasks %}
+              {% for t in tasks %}
+              <tr>
+                <td><strong>{{ t.title }}</strong></td>
+                <td>{{ t.category }}</td>
+                <td>
+                  <span class="badge {% if t.priority == 'Urgent' %}badge-danger{% elif t.priority == 'High' %}badge-warning{% else %}badge-info{% endif %}">
+                    {{ t.priority }}
+                  </span>
+                </td>
+                <td>{{ t.due_date }}</td>
+                <td>
+                  <span class="badge {% if t.status == 'Completed' %}badge-success{% elif t.status == 'In Progress' %}badge-info{% else %}badge-warning{% endif %}">
+                    {{ t.status }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                  No active tasks currently assigned to this worker.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Salary Payment Records -->
+    {% if current_role in ['Administrator', 'Farm Manager'] %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Salary & Wage Payment History</h3>
+        <span class="badge badge-success">{{ (emp.salary_payments or [])|length }} Disbursed</span>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Payment Period</th>
+              <th>Disbursement Date</th>
+              <th>Amount Paid</th>
+              <th>Notes / Voucher</th>
+              <th>Paid By</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if emp.salary_payments %}
+              {% for p in emp.salary_payments %}
+              <tr>
+                <td><strong>{{ p.period }}</strong></td>
+                <td>{{ p.date }}</td>
+                <td style="color: var(--primary); font-weight: 700;">{{ p.amount_ugx | ugx }}</td>
+                <td>{{ p.notes or '-' }}</td>
+                <td>{{ p.paid_by }}</td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                  No wage payments logged yet for this employee.
+                </td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Quick Attendance Logger & Pay Salary Modal -->
+  <div>
+    {% if current_role in ['Administrator', 'Farm Manager'] %}
+    <!-- Log Attendance Form -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h3 class="card-title">Log Daily Attendance</h3>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('employees.log_attendance', emp_id=str(emp._id)) }}">
+          <div class="form-group">
+            <label class="form-label" for="date">Attendance Date</label>
+            <input type="date" id="date" name="date" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="att_status">Daily Status</label>
+            <select name="status" id="att_status" class="form-select">
+              <option value="Present">Present on Duty</option>
+              <option value="Absent">Absent</option>
+              <option value="Sick Leave">Sick Leave</option>
+              <option value="Authorized Leave">Authorized Annual/Casual Leave</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="notes">Notes / Observations</label>
+            <input type="text" id="notes" name="notes" class="form-control" placeholder="Optional notes...">
+          </div>
+
+          <button type="submit" class="btn btn-outline" style="width: 100%;">
+            Mark Attendance
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Record Salary Payment Form -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Disburse Salary Payment</h3>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('employees.pay_salary', emp_id=str(emp._id)) }}">
+          <div class="form-group">
+            <label class="form-label" for="period">Pay Period</label>
+            <input type="text" id="period" name="period" class="form-control" placeholder="e.g. October 2026" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="amount">Payment Amount (UGX) *</label>
+            <input type="number" id="amount" name="amount" class="form-control" value="{{ emp.monthly_salary_ugx }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="pay_date">Payment Date</label>
+            <input type="date" id="pay_date" name="date" class="form-control" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Disburse & Log Expense
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ animal.tag_number }} - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Livestock: {{ animal.tag_number }}</h1>
+    <p class="page-desc">{{ animal.animal_type }} • {{ animal.breed }}</p>
+  </div>
+  <a href="{{ url_for('livestock.view', animal_id=str(animal._id)) }}" class="btn btn-outline">&larr; Back to Details</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('livestock.edit', animal_id=str(animal._id)) }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="animal_type">Animal Type *</label>
+          <input type="text" id="animal_type" name="animal_type" class="form-control" value="{{ animal.animal_type }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="breed">Breed *</label>
+          <input type="text" id="breed" name="breed" class="form-control" value="{{ animal.breed }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="tag_number">Tag / Identification Number *</label>
+          <input type="text" id="tag_number" name="tag_number" class="form-control" value="{{ animal.tag_number }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="quantity">Quantity (Head Count)</label>
+          <input type="number" id="quantity" name="quantity" class="form-control" value="{{ animal.quantity }}" min="1">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="gender">Gender</label>
+          <select name="gender" id="gender" class="form-select">
+            <option value="Female" {% if animal.gender == 'Female' %}selected{% endif %}>Female</option>
+            <option value="Male" {% if animal.gender == 'Male' %}selected{% endif %}>Male</option>
+            <option value="Mixed (Batch)" {% if animal.gender == 'Mixed (Batch)' %}selected{% endif %}>Mixed (Batch)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="date_of_birth">Date of Birth</label>
+          <input type="date" id="date_of_birth" name="date_of_birth" class="form-control" value="{{ animal.date_of_birth or '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="pen_location">Pen Location *</label>
+          <input type="text" id="pen_location" name="pen_location" class="form-control" value="{{ animal.pen_location }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="health_status">Health Status</label>
+          <select name="health_status" id="health_status" class="form-select">
+            {% for h in ['Healthy', 'Under Treatment', 'Sick', 'Quarantined', 'Pregnant'] %}
+              <option value="{{ h }}" {% if animal.health_status == h %}selected{% endif %}>{{ h }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="status">Operational Status</label>
+          <select name="status" id="status" class="form-select">
+            <option value="Active" {% if animal.status == 'Active' %}selected{% endif %}>Active on Farm</option>
+            <option value="Sold" {% if animal.status == 'Sold' %}selected{% endif %}>Sold</option>
+            <option value="Deceased" {% if animal.status == 'Deceased' %}selected{% endif %}>Deceased</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="weight_kg">Weight (kg)</label>
+          <input type="number" step="0.1" id="weight_kg" name="weight_kg" class="form-control" value="{{ animal.weight_kg or '' }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="notes">Notes</label>
+        <textarea id="notes" name="notes" class="form-control">{{ animal.notes or '' }}</textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('livestock.view', animal_id=str(animal._id)) }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Update Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Animal {{ animal.tag_number }} - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 class="page-title">{{ animal.animal_type }} ({{ animal.tag_number }})</h1>
+      <span class="badge 
+        {% if animal.health_status == 'Healthy' %}badge-success
+        {% elif animal.health_status == 'Under Treatment' %}badge-warning
+        {% elif animal.health_status == 'Sick' or animal.health_status == 'Quarantined' %}badge-danger
+        {% else %}badge-info{% endif %}" style="font-size: 0.82rem; padding: 4px 12px;">
+        {{ animal.health_status }}
+      </span>
+      {% if animal.status != 'Active' %}
+        <span class="badge badge-neutral">{{ animal.status }}</span>
+      {% endif %}
+    </div>
+    <p class="page-desc">Breed: <strong>{{ animal.breed }}</strong> • Gender: {{ animal.gender }}</p>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('livestock.index') }}" class="btn btn-outline">&larr; Back to Livestock</a>
+    {% if current_role in ['Administrator', 'Farm Manager'] %}
+    <a href="{{ url_for('livestock.edit', animal_id=str(animal._id)) }}" class="btn btn-outline" style="color: var(--primary);">Edit Animal</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Overview Stats -->
+<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">📍</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Housing / Pen</div>
+      <div class="kpi-value" style="font-size: 1.15rem;">{{ animal.pen_location }}</div>
+      <div class="kpi-sub">Type: {{ animal.tracking_type }}</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">⚖️</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Recorded Weight</div>
+      <div class="kpi-value" style="font-size: 1.15rem;">{{ animal.weight_kg or '-' }} kg</div>
+      <div class="kpi-sub">Count: {{ animal.quantity }} heads</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">🎂</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Date of Birth</div>
+      <div class="kpi-value" style="font-size: 1.15rem;">{{ animal.date_of_birth or 'Not recorded' }}</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">💰</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Purchase Price</div>
+      <div class="kpi-value" style="font-size: 1.1rem; color: var(--primary);">
+        {% if animal.purchase_price %}{{ animal.purchase_price | ugx }}{% else %}Home-Bred{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <!-- Left Column: Medical & Treatment History -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Veterinary Treatments & Vaccination Records</h3>
+        <span class="badge badge-neutral">{{ (animal.treatments or [])|length }} Records</span>
+      </div>
+      <div class="card-body">
+        {% if animal.treatments %}
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            {% for t in animal.treatments %}
+            <div style="display: flex; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light);">
+              <div style="background: var(--info-bg); color: var(--info); font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; height: fit-content; white-space: nowrap;">
+                {{ t.treatment_type }}
+              </div>
+              <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--text-dark); font-size: 0.92rem;">
+                  Medication: {{ t.medication }} (Dosage: {{ t.dosage or 'Standard' }})
+                </div>
+                {% if t.notes %}
+                <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px;">{{ t.notes }}</div>
+                {% endif %}
+                <div style="font-size: 0.72rem; color: var(--text-light); margin-top: 4px;">
+                  Date: {{ t.date }} • Administered by: {{ t.administered_by }}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="text-align: center; color: var(--text-muted); padding: 24px 0;">
+            No veterinary medical treatments logged for this animal yet.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if animal.notes %}
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-header">
+        <h3 class="card-title">General Notes & History</h3>
+      </div>
+      <div class="card-body" style="font-size: 0.88rem; color: var(--text-body);">
+        {{ animal.notes }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Record Medical Treatment Form -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">+ Log Veterinary Care</h3>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('livestock.add_treatment', animal_id=str(animal._id)) }}">
+          <div class="form-group">
+            <label class="form-label" for="treatment_type">Treatment Type</label>
+            <select name="treatment_type" id="treatment_type" class="form-select">
+              <option value="Vaccination">Vaccination (Foot & Mouth, Newcastle, etc.)</option>
+              <option value="Deworming">Deworming</option>
+              <option value="Antibiotics">Antibiotics / Infection</option>
+              <option value="Tick Dipping">Tick Dipping / Spraying</option>
+              <option value="Vitamin Booster">Vitamin / Mineral Booster</option>
+              <option value="Surgery / Castration">Surgery / Castration</option>
+              <option value="Hoof Trimming">Hoof Trimming</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="treatment_date">Treatment Date</label>
+            <input type="date" id="treatment_date" name="treatment_date" class="form-control" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="medication">Drug / Vaccine Name *</label>
+            <input type="text" id="medication" name="medication" class="form-control" 
+                   placeholder="e.g. Albendazole 10%, Penstrip, Lasota" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dosage">Dosage Given</label>
+            <input type="text" id="dosage" name="dosage" class="form-control" placeholder="e.g. 15 ml subcutaneous">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="health_status">Updated Health Status</label>
+            <select name="health_status" id="health_status" class="form-select">
+              <option value="Healthy">Healthy / Vaccinated</option>
+              <option value="Under Treatment">Under Active Treatment</option>
+              <option value="Quarantined">Quarantined</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="notes">Clinical Notes</label>
+            <textarea id="notes" name="notes" class="form-control" placeholder="Symptoms, next booster date..."></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Record Treatment
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

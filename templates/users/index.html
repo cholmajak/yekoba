@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">User & Role Management</h1>
+    <p class="page-desc">Manage system access, assign roles, and administer passwords (Administrator only)</p>
+  </div>
+  <button type="button" class="btn btn-primary" data-modal-target="addUserModal">+ Add System User</button>
+</div>
+
+<!-- Users Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Full Name</th>
+          <th>Username</th>
+          <th>Email Address</th>
+          <th>Phone</th>
+          <th>Assigned Role</th>
+          <th>Account Status</th>
+          <th>Created Date</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td><strong>{{ u.full_name }}</strong></td>
+          <td><code>{{ u.username }}</code></td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.phone or '-' }}</td>
+          <td>
+            <span class="badge 
+              {% if u.role == 'Administrator' %}badge-danger
+              {% elif u.role == 'Farm Manager' %}badge-warning
+              {% else %}badge-info{% endif %}">
+              {{ u.role }}
+            </span>
+          </td>
+          <td>
+            <span class="badge {% if u.is_active %}badge-success{% else %}badge-neutral{% endif %}">
+              {% if u.is_active %}Active{% else %}Deactivated{% endif %}
+            </span>
+          </td>
+          <td>{{ u.created_at.strftime('%Y-%m-%d') if u.created_at is not string else u.created_at }}</td>
+          <td style="text-align: right; white-space: nowrap;">
+            <button type="button" class="btn btn-outline btn-sm"
+                    onclick="openRoleModal('{{ str(u._id) }}', '{{ u.username }}', '{{ u.role }}', '{{ u.is_active }}')">
+              Edit Role
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" style="color: var(--accent-gold);"
+                    onclick="openPasswordModal('{{ str(u._id) }}', '{{ u.username }}')">
+              Reset Password
+            </button>
+            {% if str(u._id) != session.get('user_id') %}
+            <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger);"
+                    onclick="confirmDelete('{{ url_for('users.delete', user_id=str(u._id)) }}', 'User {{ u.username }}')">
+              Delete
+            </button>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal 1: Add User -->
+<div class="modal-backdrop" id="addUserModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Create System User</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form method="POST" action="{{ url_for('users.add') }}">
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="add_full_name">Full Name *</label>
+          <input type="text" id="add_full_name" name="full_name" class="form-control" placeholder="e.g. Namubiru Grace" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-group">
+            <label class="form-label" for="add_username">Username *</label>
+            <input type="text" id="add_username" name="username" class="form-control" placeholder="gnamubiru" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="add_phone">Phone Number</label>
+            <input type="text" id="add_phone" name="phone" class="form-control" placeholder="+256 700 000 000">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add_email">Email Address *</label>
+          <input type="email" id="add_email" name="email" class="form-control" placeholder="grace@greenharvest.ug" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add_role">Role Permission *</label>
+          <select name="role" id="add_role" class="form-select">
+            {% for r in roles %}
+              <option value="{{ r }}">{{ r }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="add_password">Initial Temporary Password *</label>
+          <input type="text" id="add_password" name="password" class="form-control" value="FarmPass123!" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Create User</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Edit Role & Status -->
+<div class="modal-backdrop" id="editRoleModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Modify User Role & Access</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="editRoleForm" method="POST" action="">
+      <div class="modal-body">
+        <p>User: <strong id="roleModalUsername">User</strong></p>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label" for="modal_user_role">Role Permission *</label>
+          <select name="role" id="modal_user_role" class="form-select">
+            {% for r in roles %}
+              <option value="{{ r }}">{{ r }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="modal_is_active">Account Status</label>
+          <select name="is_active" id="modal_is_active" class="form-select">
+            <option value="true">Active (Can Login)</option>
+            <option value="false">Deactivated (Access Revoked)</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 3: Reset Password -->
+<div class="modal-backdrop" id="resetPasswordModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Reset User Password</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="resetPasswordForm" method="POST" action="">
+      <div class="modal-body">
+        <p>Resetting password for: <strong id="resetModalUsername">User</strong></p>
+        <div class="form-group" style="margin-top: 14px;">
+          <label class="form-label" for="new_password">New Secure Password *</label>
+          <input type="text" id="new_password" name="new_password" class="form-control" placeholder="Min 6 characters" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Update Password</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRoleModal(userId, username, role, isActive) {
+  const modal = document.getElementById('editRoleModal');
+  const form = document.getElementById('editRoleForm');
+  form.action = `/users/edit-role/${userId}`;
+  document.getElementById('roleModalUsername').textContent = username;
+  document.getElementById('modal_user_role').value = role;
+  document.getElementById('modal_is_active').value = (isActive === 'True' || isActive === 'true') ? 'true' : 'false';
+  modal.classList.add('active');
+}
+
+function openPasswordModal(userId, username) {
+  const modal = document.getElementById('resetPasswordModal');
+  const form = document.getElementById('resetPasswordForm');
+  form.action = `/users/reset-password/${userId}`;
+  document.getElementById('resetModalUsername').textContent = username;
+  document.getElementById('new_password').value = 'NewPass' + Math.floor(1000 + Math.random() * 9000) + '!';
+  modal.classList.add('active');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ crop.crop_name }} ({{ crop.crop_id }}) - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <h1 class="page-title">{{ crop.crop_name }}</h1>
+      <span class="badge 
+        {% if crop.growth_status == 'Ready for Harvest' %}badge-warning
+        {% elif crop.growth_status == 'Harvested' %}badge-neutral
+        {% elif crop.growth_status == 'Planted' %}badge-info
+        {% else %}badge-success{% endif %}" style="font-size: 0.82rem; padding: 4px 12px;">
+        {{ crop.growth_status }}
+      </span>
+    </div>
+    <p class="page-desc">Variety: <strong>{{ crop.variety }}</strong> • Code: <code>{{ crop.crop_id }}</code></p>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('crops.index') }}" class="btn btn-outline">&larr; Back</a>
+    {% if current_role in ['Administrator', 'Farm Manager'] %}
+    <a href="{{ url_for('crops.edit', crop_id=str(crop._id)) }}" class="btn btn-outline" style="color: var(--primary);">Edit Crop</a>
+    <a href="{{ url_for('harvests.add') }}" class="btn btn-primary">+ Record Harvest</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">📍</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Field Plot</div>
+      <div class="kpi-value" style="font-size: 1.15rem;">{{ crop.field_plot }}</div>
+      <div class="kpi-sub">{{ crop.field_size }} {{ crop.field_size_unit }}</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">📅</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Planting Date</div>
+      <div class="kpi-value" style="font-size: 1.15rem;">{{ crop.planting_date }}</div>
+      <div class="kpi-sub">Seeded: {{ crop.quantity_planted }} {{ crop.quantity_planted_unit }}</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">⏱️</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Expected Harvest</div>
+      <div class="kpi-value" style="font-size: 1.15rem;">{{ crop.expected_harvest_date or 'Not Set' }}</div>
+      <div class="kpi-sub">Actual: {{ crop.actual_harvest_date or 'In Progress' }}</div>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">🧪</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Basal Nutrients</div>
+      <div class="kpi-value" style="font-size: 0.95rem; font-weight: 600;">{{ crop.fertilizer_used or 'None logged' }}</div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <!-- Left Column: Activity Log Timeline & Harvest History -->
+  <div>
+    <!-- Farm Activity Timeline -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h3 class="card-title">Field Operations & Agronomic Activities Log</h3>
+        <span class="badge badge-neutral">{{ activities|length }} Activities</span>
+      </div>
+      <div class="card-body">
+        {% if activities %}
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            {% for act in activities %}
+            <div style="display: flex; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border-light);">
+              <div style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; height: fit-content; white-space: nowrap;">
+                {{ act.activity_type }}
+              </div>
+              <div style="flex: 1;">
+                <div style="font-weight: 600; color: var(--text-dark); font-size: 0.92rem;">{{ act.description }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+                  Date: {{ act.activity_date }} • Logged by: {{ act.performed_by }}
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="text-align: center; color: var(--text-muted); padding: 24px 0;">
+            No specific field activities logged yet for this crop cycle.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Associated Harvest History -->
+    {% if harvests %}
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Harvest Records from this Crop</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Batch</th>
+              <th>Harvest Date</th>
+              <th>Yield</th>
+              <th>Grade</th>
+              <th>Available to Sell</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in harvests %}
+            <tr>
+              <td><code>{{ h.batch_number }}</code></td>
+              <td>{{ h.harvest_date }}</td>
+              <td><strong>{{ h.harvested_quantity }} {{ h.unit }}</strong></td>
+              <td><span class="badge badge-info">{{ h.quality_grade }}</span></td>
+              <td>{{ h.available_for_sale }} {{ h.unit }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right Column: Quick Activity Logger Form -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">+ Log Field Activity</h3>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('crops.add_activity', crop_id=str(crop._id)) }}">
+          <div class="form-group">
+            <label class="form-label" for="activity_type">Activity Type</label>
+            <select name="activity_type" id="activity_type" class="form-select">
+              <option value="Irrigation">Irrigation / Watering</option>
+              <option value="Fertilizer Application">Fertilizer Application</option>
+              <option value="Pest Control">Pest & Disease Spraying</option>
+              <option value="Weeding">Weeding & Mulching</option>
+              <option value="Pruning">Pruning / Staking</option>
+              <option value="Scouting">Pest / Disease Scouting</option>
+              <option value="General Maintenance">General Field Maintenance</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="activity_date">Activity Date</label>
+            <input type="date" id="activity_date" name="activity_date" class="form-control" 
+                   value="{{ crop.planting_date }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="description">Detailed Description *</label>
+            <textarea id="description" name="description" class="form-control" 
+                      placeholder="e.g. Applied 25kg Urea top-dressing along rows 1 to 14..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Record Activity
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Field Notes Card -->
+    {% if crop.notes %}
+    <div class="card" style="margin-top: 20px;">
+      <div class="card-header">
+        <h3 class="card-title">Crop Notes</h3>
+      </div>
+      <div class="card-body" style="font-size: 0.88rem; color: var(--text-body);">
+        {{ crop.notes }}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

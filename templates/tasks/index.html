@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Tasks & Activities - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Tasks & Daily Farm Activities</h1>
+    <p class="page-desc">Schedule, delegate, and track daily field duties, irrigation, spraying, and maintenance</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <a href="{{ url_for('tasks.add') }}" class="btn btn-primary">+ Create Farm Task</a>
+  {% endif %}
+</div>
+
+<!-- Task Status Counters -->
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">⏳</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Pending Tasks</div>
+      <div class="kpi-value">{{ pending_count }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">⚙️</div>
+    <div class="kpi-data">
+      <div class="kpi-title">In Progress</div>
+      <div class="kpi-value">{{ in_progress_count }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">✅</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Completed Work Orders</div>
+      <div class="kpi-value">{{ completed_count }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Task Filters -->
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('tasks.index') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Status</label>
+        <select name="status" class="form-select">
+          <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All Statuses</option>
+          <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+          <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress</option>
+          <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed</option>
+        </select>
+      </div>
+
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Priority</label>
+        <select name="priority" class="form-select">
+          <option value="All" {% if priority_filter == 'All' %}selected{% endif %}>All Priorities</option>
+          <option value="Urgent" {% if priority_filter == 'Urgent' %}selected{% endif %}>Urgent</option>
+          <option value="High" {% if priority_filter == 'High' %}selected{% endif %}>High</option>
+          <option value="Medium" {% if priority_filter == 'Medium' %}selected{% endif %}>Medium</option>
+          <option value="Low" {% if priority_filter == 'Low' %}selected{% endif %}>Low</option>
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <input type="checkbox" id="my_tasks_chk" name="my_tasks" value="true" {% if my_tasks_only %}checked{% endif %}>
+        <label for="my_tasks_chk" style="font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--primary);">My Assigned Tasks Only</label>
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('tasks.index') }}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tasks Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Priority</th>
+          <th>Task Title & Category</th>
+          <th>Assigned Worker</th>
+          <th>Location / Plot</th>
+          <th>Due Date</th>
+          <th>Status</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if tasks %}
+          {% for task in tasks %}
+          <tr {% if task.is_overdue %}style="background: #fff8f8;"{% endif %}>
+            <td>
+              <span class="badge 
+                {% if task.priority == 'Urgent' %}badge-danger
+                {% elif task.priority == 'High' %}badge-warning
+                {% elif task.priority == 'Medium' %}badge-info
+                {% else %}badge-neutral{% endif %}">
+                {{ task.priority }}
+              </span>
+            </td>
+            <td>
+              <strong>{{ task.title }}</strong><br>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">{{ task.category }}</span>
+              {% if task.description %}
+              <div style="font-size: 0.78rem; color: var(--text-body); margin-top: 4px;">{{ task.description }}</div>
+              {% endif %}
+            </td>
+            <td><strong>{{ task.assigned_to }}</strong></td>
+            <td>{{ task.location_field or 'Farm Wide' }}</td>
+            <td>
+              {{ task.due_date }}
+              {% if task.is_overdue %}
+                <br><span style="color: var(--danger); font-size: 0.72rem; font-weight: 700;">⚠️ OVERDUE</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge 
+                {% if task.status == 'Completed' %}badge-success
+                {% elif task.status == 'In Progress' %}badge-info
+                {% else %}badge-warning{% endif %}">
+                {{ task.status }}
+              </span>
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              {% if task.status != 'Completed' %}
+              <form method="POST" action="{{ url_for('tasks.update_status', task_id=str(task._id)) }}" style="display: inline;">
+                <input type="hidden" name="status" value="Completed">
+                <button type="submit" class="btn btn-outline btn-sm" style="color: var(--primary);">✓ Done</button>
+              </form>
+              {% endif %}
+              {% if task.status == 'Pending' %}
+              <form method="POST" action="{{ url_for('tasks.update_status', task_id=str(task._id)) }}" style="display: inline;">
+                <input type="hidden" name="status" value="In Progress">
+                <button type="submit" class="btn btn-outline btn-sm" style="color: var(--info);">Start</button>
+              </form>
+              {% endif %}
+              {% if current_role in ['Administrator', 'Farm Manager'] %}
+              <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger);"
+                      onclick="confirmDelete('{{ url_for('tasks.delete', task_id=str(task._id)) }}', 'Task {{ task.title }}')">
+                Delete
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No farm tasks found matching your filter.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

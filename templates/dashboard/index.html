@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Farm Operations Dashboard</h1>
+    <p class="page-desc">Real-time operational metrics, financial health, and crop analytics</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('sales.add') }}" class="btn btn-outline">+ Record Sale</a>
+    <a href="{{ url_for('crops.add') }}" class="btn btn-primary">+ Register Crop</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- 7 Key Farm Summary KPI Cards -->
+<div class="kpi-grid">
+  <!-- 1. Total Crops -->
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">🌱</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Registered Crops</div>
+      <div class="kpi-value">{{ metrics.total_crops }}</div>
+      <div class="kpi-sub"><a href="{{ url_for('crops.index') }}">View Crop Cycles &rarr;</a></div>
+    </div>
+  </div>
+
+  <!-- 2. Total Livestock -->
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🐄</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Active Livestock</div>
+      <div class="kpi-value">{{ metrics.total_livestock }} <span style="font-size: 0.8rem; font-weight: normal;">heads</span></div>
+      <div class="kpi-sub"><a href="{{ url_for('livestock.index') }}">View Herd & Flocks &rarr;</a></div>
+    </div>
+  </div>
+
+  <!-- 3. Total Employees -->
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">👥</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Farm Personnel</div>
+      <div class="kpi-value">{{ metrics.total_employees }}</div>
+      <div class="kpi-sub">
+        {% if current_role in ['Administrator', 'Farm Manager'] %}
+        <a href="{{ url_for('employees.index') }}">Staff Roster &rarr;</a>
+        {% else %}
+        <span>Active Field Team</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Available Inventory Items -->
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">📦</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Inventory SKUs</div>
+      <div class="kpi-value">{{ metrics.total_inventory }}</div>
+      <div class="kpi-sub">
+        {% if metrics.low_stock_count > 0 %}
+          <span style="color: var(--danger); font-weight: 600;">⚠ {{ metrics.low_stock_count }} Low Stock Alerts</span>
+        {% else %}
+          <span style="color: var(--success);">Stock Levels Normal</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Total Income (UGX) -->
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">💰</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Revenue</div>
+      <div class="kpi-value" style="color: var(--primary);">{{ metrics.total_income | ugx }}</div>
+      <div class="kpi-sub">Lifetime Farm Sales</div>
+    </div>
+  </div>
+
+  <!-- 6. Total Expenses (UGX) -->
+  <div class="kpi-card">
+    <div class="kpi-icon-box red">📉</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Expenses</div>
+      <div class="kpi-value" style="color: var(--danger);">{{ metrics.total_expenses | ugx }}</div>
+      <div class="kpi-sub">Operating & Input Costs</div>
+    </div>
+  </div>
+
+  <!-- 7. Estimated Profit or Loss (UGX) -->
+  <div class="kpi-card" style="border-left: 4px solid {% if metrics.net_profit >= 0 %}var(--primary){% else %}var(--danger){% endif %};">
+    <div class="kpi-icon-box {% if metrics.net_profit >= 0 %}green{% else %}red{% endif %}">
+      {% if metrics.net_profit >= 0 %}📈{% else %}⚠️{% endif %}
+    </div>
+    <div class="kpi-data">
+      <div class="kpi-title">Net Farm Profit / Loss</div>
+      <div class="kpi-value" style="color: {% if metrics.net_profit >= 0 %}var(--primary){% else %}var(--danger){% endif %};">
+        {{ metrics.net_profit | ugx }}
+      </div>
+      <div class="kpi-sub">Income − Expenses</div>
+    </div>
+  </div>
+</div>
+
+<!-- Low-Stock Alert Warning Banner if any items low -->
+{% if metrics.low_stock_count > 0 %}
+<div class="card" style="border-left: 4px solid var(--warning); margin-bottom: 24px; background: #fffdf9;">
+  <div class="card-header" style="background: transparent;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 1.2rem;">⚠️</span>
+      <h3 class="card-title" style="color: var(--warning); font-size: 0.98rem;">Low-Stock Supplies Alert ({{ metrics.low_stock_count }} items below reorder threshold)</h3>
+    </div>
+    <a href="{{ url_for('inventory.index', low_stock='true') }}" class="btn btn-outline btn-sm">Manage Restock Orders</a>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Item Name</th>
+          <th>Category</th>
+          <th>On Hand</th>
+          <th>Min Level</th>
+          <th>Supplier</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in metrics.low_stock_items %}
+        <tr>
+          <td><code>{{ item.sku }}</code></td>
+          <td><strong>{{ item.name }}</strong></td>
+          <td>{{ item.category }}</td>
+          <td><span class="badge badge-danger">{{ item.quantity_on_hand }} {{ item.unit }}</span></td>
+          <td>{{ item.min_stock_level }} {{ item.unit }}</td>
+          <td>{{ item.supplier or 'Direct Market' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Analytical Charts Grid -->
+<div class="charts-grid">
+  <!-- Chart 1: Income vs Expenses -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <h2 class="chart-title">Income versus Expenses</h2>
+        <p style="font-size: 0.78rem; color: var(--text-muted);">Monthly financial cash flow breakdown in UGX</p>
+      </div>
+      <span class="badge badge-neutral">Last 6 Months</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="incomeExpensesChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: Crop Production by Yield -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div>
+        <h2 class="chart-title">Harvest Production Yield</h2>
+        <p style="font-size: 0.78rem; color: var(--text-muted);">Total harvest distribution across crop varieties</p>
+      </div>
+      <span class="badge badge-success">Yield Share</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="cropProductionChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Two-Column Operational Lists: Upcoming Tasks & Recent Farm Activities -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px;">
+  <!-- Upcoming Tasks & Reminders -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Upcoming Tasks & Reminders</h3>
+      <a href="{{ url_for('tasks.index') }}" class="btn btn-outline btn-sm">View All Tasks</a>
+    </div>
+    <div class="card-body" style="padding: 12px 20px;">
+      {% if metrics.upcoming_tasks %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for task in metrics.upcoming_tasks %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-light);">
+              <div>
+                <div style="font-weight: 600; font-size: 0.9rem; color: var(--text-dark);">{{ task.title }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">
+                  Due: {{ task.due_date }} • Assigned: {{ task.assigned_to }}
+                </div>
+              </div>
+              <span class="badge {% if task.priority == 'Urgent' %}badge-danger{% elif task.priority == 'High' %}badge-warning{% else %}badge-info{% endif %}">
+                {{ task.priority }}
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="color: var(--text-muted); font-size: 0.88rem; padding: 20px 0; text-align: center;">No pending tasks scheduled.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent Farm Activities -->
+  <div class="card">
+    <div class="card-header">
+      <h3 class="card-title">Recent Field Activities</h3>
+      <a href="{{ url_for('crops.index') }}" class="btn btn-outline btn-sm">All Crops</a>
+    </div>
+    <div class="card-body" style="padding: 12px 20px;">
+      {% if metrics.recent_activities %}
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          {% for act in metrics.recent_activities %}
+            <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border-light);">
+              <div style="background: var(--primary-light); color: var(--primary); font-size: 0.8rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; white-space: nowrap;">
+                {{ act.activity_type }}
+              </div>
+              <div style="flex: 1;">
+                <div style="font-size: 0.88rem; font-weight: 600; color: var(--text-dark);">{{ act.crop_name }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">{{ act.description }}</div>
+                <div style="font-size: 0.72rem; color: var(--text-light); margin-top: 2px;">
+                  {{ act.activity_date }} • By {{ act.performed_by }}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="color: var(--text-muted); font-size: 0.88rem; padding: 20px 0; text-align: center;">No farm activities logged yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

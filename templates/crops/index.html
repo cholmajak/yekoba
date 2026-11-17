@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Crop Management - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Crop Management</h1>
+    <p class="page-desc">Track field cycles, growth stages, cultivation activities, and harvest projections</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <a href="{{ url_for('crops.add') }}" class="btn btn-primary">+ Register New Crop</a>
+  {% endif %}
+</div>
+
+<!-- Quick Stats Header -->
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">🌱</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Registered Crops</div>
+      <div class="kpi-value">{{ total_crops }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">🌿</div>
+    <div class="kpi-data">
+      <div class="kpi-title">In Active Growth</div>
+      <div class="kpi-value">{{ in_growth }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🌾</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Ready for Harvest</div>
+      <div class="kpi-value">{{ ready_for_harvest }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Filtering Bar -->
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('crops.index') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 2; min-width: 200px;">
+        <label class="form-label" style="font-size: 0.76rem;">Search Crop / Variety / Field</label>
+        <input type="text" name="search" class="form-control" placeholder="e.g. Maize, Longe 10H, Block A..." value="{{ search }}">
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Growth Status</label>
+        <select name="status" class="form-select">
+          <option value="All">All Statuses</option>
+          {% for st in ['Planted', 'Vegetative', 'Flowering', 'Fruiting', 'Maturing', 'Ready for Harvest', 'Harvested'] %}
+            <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Field / Plot</label>
+        <select name="field" class="form-select">
+          <option value="All">All Fields</option>
+          {% for f in fields %}
+            <option value="{{ f }}" {% if field_filter == f %}selected{% endif %}>{{ f }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('crops.index') }}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Crops Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Crop Code</th>
+          <th>Crop & Variety</th>
+          <th>Field Location</th>
+          <th>Field Size</th>
+          <th>Planting Date</th>
+          <th>Expected Harvest</th>
+          <th>Growth Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if crops %}
+          {% for crop in crops %}
+          <tr>
+            <td><code>{{ crop.crop_id }}</code></td>
+            <td>
+              <strong>{{ crop.crop_name }}</strong><br>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">{{ crop.variety }}</span>
+            </td>
+            <td>{{ crop.field_plot }}</td>
+            <td>{{ crop.field_size }} {{ crop.field_size_unit }}</td>
+            <td>{{ crop.planting_date }}</td>
+            <td>{{ crop.expected_harvest_date or 'TBD' }}</td>
+            <td>
+              <span class="badge 
+                {% if crop.growth_status == 'Ready for Harvest' %}badge-warning
+                {% elif crop.growth_status == 'Harvested' %}badge-neutral
+                {% elif crop.growth_status == 'Planted' %}badge-info
+                {% else %}badge-success{% endif %}">
+                {{ crop.growth_status }}
+              </span>
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <a href="{{ url_for('crops.view', crop_id=str(crop._id)) }}" class="btn btn-outline btn-sm">View Details</a>
+              {% if current_role in ['Administrator', 'Farm Manager'] %}
+              <a href="{{ url_for('crops.edit', crop_id=str(crop._id)) }}" class="btn btn-outline btn-sm" style="color: var(--primary);">Edit</a>
+              <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger);"
+                      onclick="confirmDelete('{{ url_for('crops.delete', crop_id=str(crop._id)) }}', 'Crop {{ crop.crop_name }} ({{ crop.crop_id }})')">
+                Delete
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No crop records found matching your filters.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

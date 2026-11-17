@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Harvest Records - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Harvest Management</h1>
+    <p class="page-desc">Record crop yields, quality grades, post-harvest storage, and produce available for sale</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <a href="{{ url_for('harvests.add') }}" class="btn btn-primary">+ Record New Harvest</a>
+  {% endif %}
+</div>
+
+<!-- Stats -->
+<div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">🌾</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Yield Logged</div>
+      <div class="kpi-value">{{ total_yield | number }} <span style="font-size: 0.8rem; font-weight: normal;">units</span></div>
+      <div class="kpi-sub">Across all crop cycles</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🛒</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Produce Available For Sale</div>
+      <div class="kpi-value" style="color: var(--primary);">{{ available_stock | number }} <span style="font-size: 0.8rem; font-weight: normal;">units</span></div>
+      <div class="kpi-sub">
+        {% if current_role in ['Administrator', 'Farm Manager'] %}
+        <a href="{{ url_for('sales.add') }}">Create Sales Invoice &rarr;</a>
+        {% else %}
+        <span>Ready for dispatch</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Harvests Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Batch Number</th>
+          <th>Crop & Variety</th>
+          <th>Field Location</th>
+          <th>Harvest Date</th>
+          <th>Total Yield</th>
+          <th>Sold Quantity</th>
+          <th>Available to Sell</th>
+          <th>Quality Grade</th>
+          <th>Storage Location</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if harvests %}
+          {% for h in harvests %}
+          <tr>
+            <td><code>{{ h.batch_number }}</code></td>
+            <td><strong>{{ h.crop_name }}</strong></td>
+            <td>{{ h.field_plot }}</td>
+            <td>{{ h.harvest_date }}</td>
+            <td><strong>{{ h.harvested_quantity }} {{ h.unit }}</strong></td>
+            <td>{{ h.sold_quantity }} {{ h.unit }}</td>
+            <td>
+              <span class="badge {% if h.available_for_sale > 0 %}badge-success{% else %}badge-neutral{% endif %}">
+                {{ h.available_for_sale }} {{ h.unit }}
+              </span>
+            </td>
+            <td><span class="badge badge-info">{{ h.quality_grade }}</span></td>
+            <td>{{ h.storage_location or 'Main Barn' }}</td>
+            <td style="text-align: right; white-space: nowrap;">
+              {% if h.available_for_sale > 0 and current_role in ['Administrator', 'Farm Manager'] %}
+              <a href="{{ url_for('sales.add') }}" class="btn btn-outline btn-sm" style="color: var(--primary);">Sell Produce</a>
+              {% endif %}
+              {% if current_role == 'Administrator' %}
+              <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger);"
+                      onclick="confirmDelete('{{ url_for('harvests.delete', harvest_id=str(h._id)) }}', 'Batch {{ h.batch_number }}')">
+                Delete
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No harvest records logged yet.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

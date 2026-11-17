@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block title %}Access Denied - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 60px 20px;">
+  <h1 style="font-size: 4rem; color: var(--danger); font-weight: 800;">403</h1>
+  <h2 style="font-size: 1.5rem; color: var(--text-dark); margin: 12px 0;">Permission Denied</h2>
+  <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 24px;">
+    Your current user role (<strong>{{ current_role }}</strong>) does not have authorization to view this section or perform this farm management operation.
+  </p>
+  <a href="{{ url_for('dashboard.index') }}" class="btn btn-primary">Return to Permitted Dashboard</a>
+</div>
+{% endblock %}

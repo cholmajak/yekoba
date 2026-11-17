@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Livestock Management - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Livestock Management</h1>
+    <p class="page-desc">Manage cattle, goats, pigs, sheep, and poultry flocks with health & vaccination tracking</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <a href="{{ url_for('livestock.add') }}" class="btn btn-primary">+ Register Livestock</a>
+  {% endif %}
+</div>
+
+<!-- Stats Header -->
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🐄</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Active Animals</div>
+      <div class="kpi-value">{{ total_heads }} <span style="font-size: 0.8rem; font-weight: normal;">heads</span></div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">🩺</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Healthy & Fit</div>
+      <div class="kpi-value">{{ healthy_heads }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box red">💉</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Under Treatment / Sick</div>
+      <div class="kpi-value" style="color: var(--danger);">{{ treatment_heads }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form id="livestockFilters" method="GET" action="{{ url_for('livestock.index') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 2; min-width: 200px;">
+        <label class="form-label" style="font-size: 0.76rem;">Search Tag / Type / Breed / Pen</label>
+        <input id="livestockSearch" type="text" name="search" class="form-control" placeholder="e.g. Friesian, CAT-001, Pen B..." value="{{ search }}">
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Animal Type</label>
+        <select id="livestockTypeFilter" name="type" class="form-select">
+          <option value="All">All Types</option>
+          {% for t in animal_types %}
+            <option value="{{ t }}" {% if type_filter == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Health Status</label>
+        <select id="livestockHealthFilter" name="health" class="form-select">
+          <option value="All">All Health Statuses</option>
+          {% for h in ['Healthy', 'Under Treatment', 'Sick', 'Quarantined', 'Pregnant'] %}
+            <option value="{{ h }}" {% if health_filter == h %}selected{% endif %}>{{ h }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('livestock.index') }}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Livestock Table -->
+<div class="card">
+  <div class="livestock-table-toolbar">
+    <span id="livestockResults" role="status" aria-live="polite">{{ animals|length }} livestock record{% if animals|length != 1 %}s{% endif %}</span>
+  </div>
+  <div class="table-responsive">
+    <table id="livestockTable" class="data-table">
+      <thead>
+        <tr>
+          <th aria-sort="none"><button type="button" class="sortable-heading" data-sort-index="0">Tag / Batch ID<span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button type="button" class="sortable-heading" data-sort-index="1">Type & Breed<span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button type="button" class="sortable-heading" data-sort-index="2" data-sort-type="number">Quantity<span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button type="button" class="sortable-heading" data-sort-index="3">Gender<span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button type="button" class="sortable-heading" data-sort-index="4">Pen Location<span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button type="button" class="sortable-heading" data-sort-index="5" data-sort-type="number">Weight<span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th aria-sort="none"><button type="button" class="sortable-heading" data-sort-index="6">Health Status<span class="sort-indicator" aria-hidden="true"></span></button></th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if animals %}
+          {% for animal in animals %}
+          <tr data-livestock-row data-animal-type="{{ animal.animal_type }}" data-health-status="{{ animal.health_status }}">
+            <td>
+              <code>{{ animal.tag_number }}</code>
+              {% if animal.tracking_type == 'Batch' %}
+                <span class="badge badge-neutral" style="font-size: 0.65rem;">Flock Batch</span>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ animal.animal_type }}</strong><br>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">{{ animal.breed }}</span>
+            </td>
+            <td><strong>{{ animal.quantity }}</strong></td>
+            <td>{{ animal.gender }}</td>
+            <td>{{ animal.pen_location }}</td>
+            <td>{{ animal.weight_kg or '-' }} kg</td>
+            <td>
+              <span class="badge 
+                {% if animal.health_status == 'Healthy' %}badge-success
+                {% elif animal.health_status == 'Under Treatment' %}badge-warning
+                {% elif animal.health_status == 'Sick' or animal.health_status == 'Quarantined' %}badge-danger
+                {% else %}badge-info{% endif %}">
+                {{ animal.health_status }}
+              </span>
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <a href="{{ url_for('livestock.view', animal_id=str(animal._id)) }}" class="btn btn-outline btn-sm">View Medical</a>
+              {% if current_role in ['Administrator', 'Farm Manager'] %}
+              <a href="{{ url_for('livestock.edit', animal_id=str(animal._id)) }}" class="btn btn-outline btn-sm" style="color: var(--primary);">Edit</a>
+              <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger);"
+                      onclick="confirmDelete('{{ url_for('livestock.delete', animal_id=str(animal._id)) }}', 'Animal {{ animal.tag_number }}')">
+                Delete
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% endif %}
+        <tr id="livestockEmptyState" {% if animals %}hidden{% endif %}>
+          <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-muted);">
+            {% if animals %}No livestock records match these filters.{% else %}No active livestock records found.{% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

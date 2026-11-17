@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Management - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Sales & Billing Management</h1>
+    <p class="page-desc">Track sales invoices, customer receipts, and payment settlements in UGX</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <a href="{{ url_for('sales.add') }}" class="btn btn-primary">+ Create Sales Invoice</a>
+  {% endif %}
+</div>
+
+<!-- Financial KPI Cards -->
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">💰</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Sales Revenue</div>
+      <div class="kpi-value" style="color: var(--primary);">{{ total_revenue | ugx }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">✅</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Paid / Settled Receipts</div>
+      <div class="kpi-value">{{ paid_revenue | ugx }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">⏳</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Pending Receivables</div>
+      <div class="kpi-value" style="color: var(--accent-gold);">{{ pending_revenue | ugx }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Sales Filter Bar -->
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('sales.index') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 2; min-width: 200px;">
+        <label class="form-label" style="font-size: 0.76rem;">Search Invoice / Customer / Product</label>
+        <input type="text" name="search" class="form-control" placeholder="e.g. INV-2026-001, Nakasero Market, Matooke..." value="{{ search }}">
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Payment Status</label>
+        <select name="status" class="form-select">
+          <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All Statuses</option>
+          <option value="Paid" {% if status_filter == 'Paid' %}selected{% endif %}>Paid</option>
+          <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending</option>
+          <option value="Partial" {% if status_filter == 'Partial' %}selected{% endif %}>Partial</option>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('sales.index') }}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Sales Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Sale Date</th>
+          <th>Customer Name</th>
+          <th>Product Sold</th>
+          <th>Quantity</th>
+          <th>Unit Price</th>
+          <th>Total (UGX)</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if sales %}
+          {% for sale in sales %}
+          <tr>
+            <td><code>{{ sale.invoice_number }}</code></td>
+            <td>{{ sale.sale_date }}</td>
+            <td>
+              <strong>{{ sale.customer_name }}</strong><br>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">{{ sale.customer_phone or 'No phone' }}</span>
+            </td>
+            <td>{{ sale.product_name }}</td>
+            <td>{{ sale.quantity }} {{ sale.unit }}</td>
+            <td>{{ sale.unit_price | ugx }}</td>
+            <td><strong style="color: var(--primary);">{{ sale.total_amount | ugx }}</strong></td>
+            <td>
+              <span class="badge 
+                {% if sale.payment_status == 'Paid' %}badge-success
+                {% elif sale.payment_status == 'Pending' %}badge-danger
+                {% else %}badge-warning{% endif %}">
+                {{ sale.payment_status }}
+              </span>
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <a href="{{ url_for('sales.view', sale_id=str(sale._id)) }}" class="btn btn-outline btn-sm">Invoice View</a>
+              {% if sale.payment_status != 'Paid' and current_role in ['Administrator', 'Farm Manager'] %}
+              <form method="POST" action="{{ url_for('sales.update_status', sale_id=str(sale._id)) }}" style="display: inline;">
+                <input type="hidden" name="payment_status" value="Paid">
+                <button type="submit" class="btn btn-outline btn-sm" style="color: var(--primary);">Mark Paid</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No sales recorded matching your filters.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

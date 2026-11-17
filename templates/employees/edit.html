@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ emp.full_name }} - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Employee: {{ emp.full_name }}</h1>
+    <p class="page-desc">Code: <code>{{ emp.employee_code }}</code></p>
+  </div>
+  <a href="{{ url_for('employees.view', emp_id=str(emp._id)) }}" class="btn btn-outline">&larr; Back to Profile</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('employees.edit', emp_id=str(emp._id)) }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="full_name">Full Name *</label>
+          <input type="text" id="full_name" name="full_name" class="form-control" value="{{ emp.full_name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="job_title">Job Title *</label>
+          <input type="text" id="job_title" name="job_title" class="form-control" value="{{ emp.job_title }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="department">Department</label>
+          <input type="text" id="department" name="department" class="form-control" value="{{ emp.department }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone Number *</label>
+          <input type="text" id="phone" name="phone" class="form-control" value="{{ emp.phone }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="form-control" value="{{ emp.email or '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="status">Employment Status</label>
+          <select name="status" id="status" class="form-select">
+            <option value="Active" {% if emp.status == 'Active' %}selected{% endif %}>Active</option>
+            <option value="On Leave" {% if emp.status == 'On Leave' %}selected{% endif %}>On Leave</option>
+            <option value="Terminated" {% if emp.status == 'Terminated' %}selected{% endif %}>Terminated</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="monthly_salary_ugx">Monthly Wage / Salary (UGX)</label>
+          <input type="number" id="monthly_salary_ugx" name="monthly_salary_ugx" class="form-control" value="{{ emp.monthly_salary_ugx }}" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="duties_assigned">Assigned Duties</label>
+        <textarea id="duties_assigned" name="duties_assigned" class="form-control">{{ emp.duties_assigned or '' }}</textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('employees.view', emp_id=str(emp._id)) }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Update Employee</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

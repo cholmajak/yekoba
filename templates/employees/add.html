@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Employee - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Register Farm Employee</h1>
+    <p class="page-desc">Add personnel, contact information, duty assignments, and monthly wage in UGX</p>
+  </div>
+  <a href="{{ url_for('employees.index') }}" class="btn btn-outline">&larr; Back to Employees</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('employees.add') }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="full_name">Full Name *</label>
+          <input type="text" id="full_name" name="full_name" class="form-control" 
+                 placeholder="e.g. Sserwadda Ronald" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="job_title">Job Title *</label>
+          <input type="text" id="job_title" name="job_title" class="form-control" 
+                 placeholder="e.g. Senior Agronomist, Tractor Driver, Herdsperson" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="department">Department</label>
+          <select name="department" id="department" class="form-select">
+            <option value="Field & Crop Operations">Field & Crop Operations</option>
+            <option value="Livestock & Dairy">Livestock & Dairy</option>
+            <option value="Equipment & Machinery">Equipment & Machinery</option>
+            <option value="Storage & Post-Harvest">Storage & Post-Harvest</option>
+            <option value="Farm Security & Administration">Farm Security & Administration</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone Number (MTN/Airtel) *</label>
+          <input type="text" id="phone" name="phone" class="form-control" 
+                 placeholder="+256 782 000 000" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Email Address</label>
+          <input type="email" id="email" name="email" class="form-control" placeholder="staff@greenharvest.ug">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="national_id">National ID (NIN)</label>
+          <input type="text" id="national_id" name="national_id" class="form-control" placeholder="CM90012345678A">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="hire_date">Date of Employment</label>
+          <input type="date" id="hire_date" name="hire_date" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="monthly_salary_ugx">Monthly Wage / Salary (UGX) *</label>
+          <input type="number" id="monthly_salary_ugx" name="monthly_salary_ugx" class="form-control" 
+                 placeholder="e.g. 800000" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="duties_assigned">Assigned Farm Duties & Responsibilities</label>
+        <textarea id="duties_assigned" name="duties_assigned" class="form-control" 
+                  placeholder="e.g. Oversees irrigation schedule in North plots, calibrates boom sprayers..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="emergency_contact">Emergency Contact Person & Phone</label>
+        <input type="text" id="emergency_contact" name="emergency_contact" class="form-control" 
+               placeholder="e.g. Spouse: Mary (+256 701 112 233)">
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('employees.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Register Employee</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

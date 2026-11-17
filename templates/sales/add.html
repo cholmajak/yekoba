@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Farm Sale - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Record Product Sale</h1>
+    <p class="page-desc">Issue a sales invoice for harvested crops, livestock, or dairy with inventory deduction</p>
+  </div>
+  <a href="{{ url_for('sales.index') }}" class="btn btn-outline">&larr; Back to Sales</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('sales.add') }}">
+      <div class="form-grid">
+        <!-- Item Source Selection -->
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label">Product Source *</label>
+          <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+              <input type="radio" name="item_source" value="harvest" checked onchange="switchSource(this.value)">
+              <strong>From Harvested Produce</strong> (Matooke, Coffee, Maize, etc.)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+              <input type="radio" name="item_source" value="livestock" onchange="switchSource(this.value)">
+              <strong>From Livestock Herd</strong> (Live cattle, goats, pigs)
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.9rem;">
+              <input type="radio" name="item_source" value="other" onchange="switchSource(this.value)">
+              <strong>Daily Farm Produce</strong> (Fresh Milk, Eggs, Honey)
+            </label>
+          </div>
+        </div>
+
+        <!-- Harvest Dropdown -->
+        <div class="form-group" id="harvestGroup">
+          <label class="form-label" for="harvest_id">Select Harvest Batch *</label>
+          <select name="harvest_id" id="harvest_id" class="form-select">
+            <option value="">-- Choose Available Harvest Lot --</option>
+            {% for h in available_harvests %}
+              <option value="{{ str(h._id) }}">
+                {{ h.batch_number }} - {{ h.crop_name }} (Avail: {{ h.available_for_sale }} {{ h.unit }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Livestock Dropdown -->
+        <div class="form-group" id="livestockGroup" style="display: none;">
+          <label class="form-label" for="livestock_id">Select Animal to Sell *</label>
+          <select name="livestock_id" id="livestock_id" class="form-select">
+            <option value="">-- Choose Active Animal --</option>
+            {% for a in livestock_list %}
+              <option value="{{ str(a._id) }}">
+                {{ a.animal_type }} - {{ a.breed }} (Tag: {{ a.tag_number }}, {{ a.pen_location }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Custom Product Name (for other) -->
+        <div class="form-group" id="customProductGroup" style="display: none;">
+          <label class="form-label" for="custom_product_name">Produce Description *</label>
+          <input type="text" id="custom_product_name" name="custom_product_name" class="form-control" placeholder="e.g. Fresh Raw Milk, Tray of Eggs">
+        </div>
+
+        <div class="form-group" id="customUnitGroup" style="display: none;">
+          <label class="form-label" for="custom_unit">Measurement Unit</label>
+          <input type="text" id="custom_unit" name="custom_unit" class="form-control" placeholder="e.g. liters, trays">
+        </div>
+
+        <!-- Customer Name -->
+        <div class="form-group">
+          <label class="form-label" for="customer_name">Customer / Buyer Name *</label>
+          <input type="text" id="customer_name" name="customer_name" class="form-control" 
+                 placeholder="e.g. Kampala Wholesalers, Nakasero Vendor, Local Dairy" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="customer_phone">Customer Phone Number</label>
+          <input type="text" id="customer_phone" name="customer_phone" class="form-control" placeholder="+256 701 234 567">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sale_date">Sale Date *</label>
+          <input type="date" id="sale_date" name="sale_date" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="quantity">Quantity Sold *</label>
+          <input type="number" step="0.1" min="0.1" id="quantity" name="quantity" class="form-control" 
+                 placeholder="e.g. 50" oninput="calcTotal()" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="unit_price">Unit Price (UGX) *</label>
+          <input type="number" id="unit_price" name="unit_price" class="form-control" 
+                 placeholder="e.g. 1500" oninput="calcTotal()" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Total Amount (UGX)</label>
+          <input type="text" id="total_amount_preview" class="form-control" value="UGX 0" readonly style="font-weight: 700; color: var(--primary); background: #f8faf8;">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="payment_status">Payment Status *</label>
+          <select name="payment_status" id="payment_status" class="form-select">
+            <option value="Paid">Fully Paid (Cash / Mobile Money / Bank)</option>
+            <option value="Pending">Pending / Unpaid on Credit</option>
+            <option value="Partial">Partial Downpayment</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="payment_method">Payment Method</label>
+          <select name="payment_method" id="payment_method" class="form-select">
+            <option value="MTN Mobile Money">MTN Mobile Money</option>
+            <option value="Airtel Money">Airtel Money</option>
+            <option value="Cash">Cash in Hand</option>
+            <option value="Bank Wire / EFT">Bank Wire / EFT</option>
+            <option value="Credit / Invoice">Credit / Pending Invoice</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="notes">Delivery / Receipt Notes</label>
+        <textarea id="notes" name="notes" class="form-control" placeholder="Delivery vehicle registration, driver name, invoice comments..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('sales.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Complete Sale & Deduct Stock</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function switchSource(val) {
+  document.getElementById('harvestGroup').style.display = (val === 'harvest') ? 'block' : 'none';
+  document.getElementById('livestockGroup').style.display = (val === 'livestock') ? 'block' : 'none';
+  document.getElementById('customProductGroup').style.display = (val === 'other') ? 'block' : 'none';
+  document.getElementById('customUnitGroup').style.display = (val === 'other') ? 'block' : 'none';
+}
+
+function calcTotal() {
+  const qty = parseFloat(document.getElementById('quantity').value) || 0;
+  const price = parseFloat(document.getElementById('unit_price').value) || 0;
+  const total = qty * price;
+  document.getElementById('total_amount_preview').value = 'UGX ' + total.toLocaleString();
+}
+</script>
+{% endblock %}

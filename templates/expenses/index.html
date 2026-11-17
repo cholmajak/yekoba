@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Farm Expenses - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Farm Expenses & Outflows</h1>
+    <p class="page-desc">Record, categorize, and monitor operational costs, inputs, machinery, and utilities in UGX</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <a href="{{ url_for('expenses.add') }}" class="btn btn-primary">+ Record Farm Expense</a>
+  {% endif %}
+</div>
+
+<!-- Quick Stat Header -->
+<div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box red">📉</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Filtered Expenditure</div>
+      <div class="kpi-value" style="color: var(--danger);">{{ total_expenses | ugx }}</div>
+      <div class="kpi-sub">Operating & Input Overhead</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🧾</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Expense Transactions</div>
+      <div class="kpi-value">{{ expenses|length }}</div>
+      <div class="kpi-sub">Audit Entries Logged</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('expenses.index') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 2; min-width: 200px;">
+        <label class="form-label" style="font-size: 0.76rem;">Search Description / Supplier</label>
+        <input type="text" name="search" class="form-control" placeholder="e.g. Diesel, Bukoola, Seeds..." value="{{ search }}">
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Category</label>
+        <select name="category" class="form-select">
+          <option value="All">All Categories</option>
+          {% for c in categories %}
+            <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 130px;">
+        <label class="form-label" style="font-size: 0.76rem;">From Date</label>
+        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+      </div>
+      <div style="flex: 1; min-width: 130px;">
+        <label class="form-label" style="font-size: 0.76rem;">To Date</label>
+        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('expenses.index') }}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Expenses Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Description</th>
+          <th>Vendor / Supplier</th>
+          <th>Payment Method</th>
+          <th>Receipt Ref</th>
+          <th>Amount (UGX)</th>
+          {% if current_role in ['Administrator', 'Farm Manager'] %}
+          <th style="text-align: right;">Action</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% if expenses %}
+          {% for exp in expenses %}
+          <tr>
+            <td>{{ exp.date }}</td>
+            <td><span class="badge badge-neutral">{{ exp.category }}</span></td>
+            <td><strong>{{ exp.description }}</strong></td>
+            <td>{{ exp.vendor_supplier or 'Direct Cash' }}</td>
+            <td>{{ exp.payment_method }}</td>
+            <td><code>{{ exp.receipt_ref or '-' }}</code></td>
+            <td><strong style="color: var(--danger);">{{ exp.amount | ugx }}</strong></td>
+            {% if current_role in ['Administrator', 'Farm Manager'] %}
+            <td style="text-align: right;">
+              <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger);"
+                      onclick="confirmDelete('{{ url_for('expenses.delete', expense_id=str(exp._id)) }}', 'Expense {{ exp.description }}')">
+                Delete
+              </button>
+            </td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No expenses found for this filter criteria.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

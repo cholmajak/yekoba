@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - GreenHarvest Farm Management System</title>
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/logo.svg') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="auth-page">
+  <div class="auth-card" style="max-width: 480px;">
+    <div class="auth-header">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="GreenHarvest Logo" class="auth-logo">
+      <h1 class="auth-title">Create Account</h1>
+      <p class="auth-subtitle">
+        {% if is_first_user %}
+          Initial System Setup: First registered user becomes Farm Administrator
+        {% else %}
+          Register a new farm worker or supervisor account
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+            <button type="button" class="alert-close">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      <div class="form-group">
+        <label class="form-label" for="full_name">Full Name *</label>
+        <input type="text" id="full_name" name="full_name" class="form-control" 
+               placeholder="e.g. Kasumba David" value="{{ full_name or '' }}" required>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="username">Username *</label>
+          <input type="text" id="username" name="username" class="form-control" 
+                 placeholder="e.g. dkasumba" value="{{ username or '' }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="phone">Phone Number</label>
+          <input type="text" id="phone" name="phone" class="form-control" 
+                 placeholder="+256 700 000 000" value="{{ phone or '' }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address *</label>
+        <input type="email" id="email" name="email" class="form-control" 
+               placeholder="name@greenharvest.ug" value="{{ email or '' }}" required>
+      </div>
+
+      {% if not is_first_user %}
+      <div class="form-group">
+        <label class="form-label" for="role">Requested User Role</label>
+        <select name="role" id="role" class="form-select">
+          <option value="Farm Worker">Farm Worker (Assigned Tasks & Activity View)</option>
+          <option value="Farm Manager">Farm Manager (Full Operations Management)</option>
+        </select>
+      </div>
+      {% endif %}
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label class="form-label" for="password">Password *</label>
+          <input type="password" id="password" name="password" class="form-control" 
+                 placeholder="Min 6 characters" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">Confirm Password *</label>
+          <input type="password" id="confirm_password" name="confirm_password" class="form-control" 
+                 placeholder="Re-type password" required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 11px; margin-top: 10px;">
+        Complete Registration
+      </button>
+    </form>
+
+    <div style="margin-top: 20px; text-align: center; font-size: 0.82rem; color: var(--text-muted);">
+      Already have an account? <a href="{{ url_for('auth.login') }}" style="font-weight: 600;">Sign in here</a>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Management - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Inventory & Supplies</h1>
+    <p class="page-desc">Track seeds, fertilizers, feeds, chemicals, tools, and fuel with reorder warnings</p>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('inventory.movements') }}" class="btn btn-outline">Audit Stock Movements</a>
+    {% if current_role in ['Administrator', 'Farm Manager'] %}
+    <a href="{{ url_for('inventory.add') }}" class="btn btn-primary">+ Register New SKU</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">📦</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Active SKUs</div>
+      <div class="kpi-value">{{ total_items }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box red">⚠️</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Low Stock Alerts</div>
+      <div class="kpi-value" style="color: {% if low_stock_count > 0 %}var(--danger){% else %}var(--success){% endif %};">
+        {{ low_stock_count }}
+      </div>
+      <div class="kpi-sub">
+        {% if low_stock_count > 0 %}
+          <a href="{{ url_for('inventory.index', low_stock='true') }}" style="color: var(--danger); font-weight: 600;">Filter Low Stock &rarr;</a>
+        {% else %}
+          <span>All above minimum threshold</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">💵</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Inventory Valuation (UGX)</div>
+      <div class="kpi-value" style="color: var(--primary);">{{ total_value | ugx }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('inventory.index') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 2; min-width: 200px;">
+        <label class="form-label" style="font-size: 0.76rem;">Search SKU / Name / Supplier</label>
+        <input type="text" name="search" class="form-control" placeholder="e.g. Urea, NPK, Maize seed, INV-001..." value="{{ search }}">
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Category</label>
+        <select name="category" class="form-select">
+          <option value="All">All Categories</option>
+          {% for c in categories %}
+            <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <input type="checkbox" id="low_stock_chk" name="low_stock" value="true" {% if low_stock_only %}checked{% endif %}>
+        <label for="low_stock_chk" style="font-size: 0.82rem; font-weight: 600; cursor: pointer; color: var(--danger);">Low Stock Only</label>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('inventory.index') }}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Inventory Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>SKU</th>
+          <th>Item Name</th>
+          <th>Category</th>
+          <th>Quantity on Hand</th>
+          <th>Min Level</th>
+          <th>Unit Cost (UGX)</th>
+          <th>Supplier</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if items %}
+          {% for item in items %}
+          <tr>
+            <td><code>{{ item.sku }}</code></td>
+            <td><strong>{{ item.name }}</strong></td>
+            <td>{{ item.category }}</td>
+            <td>
+              {% if item.quantity_on_hand <= item.min_stock_level %}
+                <span class="badge badge-danger">
+                  ⚠️ {{ item.quantity_on_hand }} {{ item.unit }} (LOW)
+                </span>
+              {% else %}
+                <span class="badge badge-success">
+                  {{ item.quantity_on_hand }} {{ item.unit }}
+                </span>
+              {% endif %}
+            </td>
+            <td>{{ item.min_stock_level }} {{ item.unit }}</td>
+            <td>{{ item.unit_cost_ugx | ugx }}</td>
+            <td>{{ item.supplier or 'Direct' }}</td>
+            <td style="text-align: right; white-space: nowrap;">
+              <!-- Quick Stock Adjustment Button -->
+              <button type="button" class="btn btn-outline btn-sm"
+                      onclick="openAdjustModal('{{ str(item._id) }}', '{{ item.name }}', '{{ item.unit }}', '{{ item.quantity_on_hand }}')">
+                ± Stock
+              </button>
+              {% if current_role in ['Administrator', 'Farm Manager'] %}
+              <a href="{{ url_for('inventory.edit', item_id=str(item._id)) }}" class="btn btn-outline btn-sm" style="color: var(--primary);">Edit</a>
+              {% endif %}
+              {% if current_role == 'Administrator' %}
+              <button type="button" class="btn btn-outline btn-sm" style="color: var(--danger);"
+                      onclick="confirmDelete('{{ url_for('inventory.delete', item_id=str(item._id)) }}', 'SKU {{ item.name }}')">
+                Delete
+              </button>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No inventory items found.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Stock Adjustment Modal -->
+<div class="modal-backdrop" id="adjustStockModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 class="modal-title">Adjust Stock Level</h3>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <form id="adjustStockForm" method="POST" action="">
+      <div class="modal-body">
+        <p>Item: <strong id="adjustItemName">Item</strong></p>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+          Current On-Hand Stock: <span id="adjustCurrentQty" style="font-weight: 700; color: var(--text-dark);">0</span>
+        </p>
+
+        <div class="form-group">
+          <label class="form-label">Adjustment Type *</label>
+          <div style="display: flex; gap: 16px;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.88rem; cursor: pointer;">
+              <input type="radio" name="adjustment_type" value="DEDUCT" checked>
+              <span style="color: var(--danger); font-weight: 600;">− Record Usage / Consumption</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 0.88rem; cursor: pointer;">
+              <input type="radio" name="adjustment_type" value="ADD">
+              <span style="color: var(--primary); font-weight: 600;">+ Restock Purchase</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="adjustQty">Quantity *</label>
+          <input type="number" step="0.1" min="0.1" id="adjustQty" name="quantity" class="form-control" placeholder="Quantity to add or deduct" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="adjustReason">Reason / Task Reference</label>
+          <input type="text" id="adjustReason" name="reason" class="form-control" placeholder="e.g. Applied on Plot 3 Maize, or Received Delivery">
+        </div>
+
+        <div class="form-group" id="recordExpenseDiv">
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; cursor: pointer;">
+            <input type="checkbox" name="record_expense" value="true">
+            <span>Also record restock purchase cost under Farm Expenses</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" data-modal-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Adjustment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openAdjustModal(itemId, itemName, unit, currentQty) {
+  const modal = document.getElementById('adjustStockModal');
+  const form = document.getElementById('adjustStockForm');
+  form.action = `/inventory/adjust/${itemId}`;
+  document.getElementById('adjustItemName').textContent = itemName;
+  document.getElementById('adjustCurrentQty').textContent = `${currentQty} ${unit}`;
+  modal.classList.add('active');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#34d399;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background Rounded Shield -->
+  <rect x="5" y="5" width="90" height="90" rx="22" fill="#0f3d24" />
+  <!-- Circular Accent Glow -->
+  <circle cx="50" cy="50" r="34" fill="#14532d" />
+  <!-- Sprout Stem -->
+  <path d="M50 78 C50 56 46 44 48 30" stroke="#a7f3d0" stroke-width="5" stroke-linecap="round" fill="none" />
+  <!-- Left Sprout Leaf -->
+  <path d="M48 48 C30 45 22 28 42 24 C48 34 48 44 48 48 Z" fill="url(#grad1)" />
+  <!-- Right Sprout Leaf -->
+  <path d="M49 38 C68 32 76 16 56 14 C48 24 49 34 49 38 Z" fill="url(#grad2)" />
+  <!-- Golden Sun Accent -->
+  <circle cx="72" cy="28" r="6" fill="#fbbf24" />
+</svg>

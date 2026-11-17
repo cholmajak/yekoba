@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Harvest - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Record Crop Harvest</h1>
+    <p class="page-desc">Log harvested crop yield, quality grading, and available stock for sales</p>
+  </div>
+  <a href="{{ url_for('harvests.index') }}" class="btn btn-outline">&larr; Back to Harvests</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('harvests.add') }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="crop_id">Select Crop Cycle *</label>
+          <select name="crop_id" id="crop_id" class="form-select" required>
+            <option value="">-- Choose Harvested Crop --</option>
+            {% for c in crops %}
+              <option value="{{ str(c._id) }}">
+                {{ c.crop_name }} ({{ c.variety }}) - {{ c.field_plot }} [Status: {{ c.growth_status }}]
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="harvest_date">Harvest Date *</label>
+          <input type="date" id="harvest_date" name="harvest_date" class="form-control" required>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+          <div class="form-group">
+            <label class="form-label" for="harvested_quantity">Harvested Quantity *</label>
+            <input type="number" step="0.1" min="0.1" id="harvested_quantity" name="harvested_quantity" class="form-control" placeholder="e.g. 1500" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="unit">Unit</label>
+            <select name="unit" id="unit" class="form-select">
+              <option value="kg">kg</option>
+              <option value="bags (100kg)">bags (100kg)</option>
+              <option value="bunches">bunches (Matooke)</option>
+              <option value="crates">crates</option>
+              <option value="metric tons">metric tons</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="quality_grade">Quality Grade</label>
+          <select name="quality_grade" id="quality_grade" class="form-select">
+            <option value="Grade A (Export / Premium)">Grade A (Export / Premium)</option>
+            <option value="Grade B (Commercial / Standard)">Grade B (Commercial / Standard)</option>
+            <option value="Grade C (Processing / Animal Feed)">Grade C (Processing / Animal Feed)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="storage_location">Post-Harvest Storage Facility</label>
+          <input type="text" id="storage_location" name="storage_location" class="form-control" placeholder="e.g. Produce Store Room A, Cold Room 1">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="notes">Harvest Notes & Moisture Content</label>
+        <textarea id="notes" name="notes" class="form-control" placeholder="Grain moisture percentage, sorting notes, labor hours..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('harvests.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Harvest Batch</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

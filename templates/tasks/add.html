@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Farm Task - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Create & Assign Farm Task</h1>
+    <p class="page-desc">Schedule farm duties, set priorities, assign to workers, and track completion</p>
+  </div>
+  <a href="{{ url_for('tasks.index') }}" class="btn btn-outline">&larr; Back to Tasks</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('tasks.add') }}">
+      <div class="form-grid">
+        <div class="form-group" style="grid-column: 1 / -1;">
+          <label class="form-label" for="title">Task Title *</label>
+          <input type="text" id="title" name="title" class="form-control" 
+                 placeholder="e.g. Apply Top-dressing Fertilizer on Plot B Maize, Spray Dairy Cattle" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="category">Category *</label>
+          <select name="category" id="category" class="form-select" required>
+            {% for c in categories %}
+              <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="priority">Priority *</label>
+          <select name="priority" id="priority" class="form-select" required>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+            <option value="Urgent">Urgent (Immediate Attention)</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="due_date">Due Date *</label>
+          <input type="date" id="due_date" name="due_date" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="assigned_to">Assign to Employee *</label>
+          <select name="assigned_to" id="assigned_to" class="form-select" required>
+            <option value="Unassigned">-- Unassigned (Open Task) --</option>
+            {% for emp in employees %}
+              <option value="{{ emp.full_name }}">
+                {{ emp.full_name }} ({{ emp.job_title }} - {{ emp.department }})
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="location_field">Plot / Barn Location</label>
+          <input type="text" id="location_field" name="location_field" class="form-control" 
+                 placeholder="e.g. North Plot Block A, Dairy Pen 2">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Detailed Task Instructions & Requirements</label>
+        <textarea id="description" name="description" class="form-control" 
+                  placeholder="Specify application rates, protective gear required, equipment to use..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('tasks.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Create & Assign Task</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

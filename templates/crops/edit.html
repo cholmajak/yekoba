@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit {{ crop.crop_name }} - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Edit Crop: {{ crop.crop_name }} ({{ crop.crop_id }})</h1>
+    <p class="page-desc">Update growth stage, actual harvest dates, or field notes</p>
+  </div>
+  <a href="{{ url_for('crops.view', crop_id=str(crop._id)) }}" class="btn btn-outline">&larr; Back to Details</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('crops.edit', crop_id=str(crop._id)) }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="crop_name">Crop Name *</label>
+          <input type="text" id="crop_name" name="crop_name" class="form-control" value="{{ crop.crop_name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="variety">Crop Variety *</label>
+          <input type="text" id="variety" name="variety" class="form-control" value="{{ crop.variety }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="field_plot">Field / Plot Location *</label>
+          <input type="text" id="field_plot" name="field_plot" class="form-control" value="{{ crop.field_plot }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="growth_status">Growth Status</label>
+          <select name="growth_status" id="growth_status" class="form-select">
+            {% for st in ['Planted', 'Vegetative', 'Flowering', 'Fruiting', 'Maturing', 'Ready for Harvest', 'Harvested'] %}
+              <option value="{{ st }}" {% if crop.growth_status == st %}selected{% endif %}>{{ st }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="planting_date">Planting Date *</label>
+          <input type="date" id="planting_date" name="planting_date" class="form-control" value="{{ crop.planting_date }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="expected_harvest_date">Expected Harvest Date</label>
+          <input type="date" id="expected_harvest_date" name="expected_harvest_date" class="form-control" value="{{ crop.expected_harvest_date or '' }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="actual_harvest_date">Actual Harvest Date (If Completed)</label>
+          <input type="date" id="actual_harvest_date" name="actual_harvest_date" class="form-control" value="{{ crop.actual_harvest_date or '' }}">
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+          <div class="form-group">
+            <label class="form-label" for="field_size">Field Size</label>
+            <input type="number" step="0.1" id="field_size" name="field_size" class="form-control" value="{{ crop.field_size }}" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="field_size_unit">Unit</label>
+            <select name="field_size_unit" id="field_size_unit" class="form-select">
+              <option value="Acres" {% if crop.field_size_unit == 'Acres' %}selected{% endif %}>Acres</option>
+              <option value="Hectares" {% if crop.field_size_unit == 'Hectares' %}selected{% endif %}>Hectares</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px;">
+          <div class="form-group">
+            <label class="form-label" for="quantity_planted">Quantity Seeded</label>
+            <input type="number" step="0.1" id="quantity_planted" name="quantity_planted" class="form-control" value="{{ crop.quantity_planted }}">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="quantity_planted_unit">Unit</label>
+            <input type="text" id="quantity_planted_unit" name="quantity_planted_unit" class="form-control" value="{{ crop.quantity_planted_unit }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="fertilizer_used">Fertilizers & Chemicals Applied</label>
+        <input type="text" id="fertilizer_used" name="fertilizer_used" class="form-control" value="{{ crop.fertilizer_used or '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="notes">Notes & Observations</label>
+        <textarea id="notes" name="notes" class="form-control">{{ crop.notes or '' }}</textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('crops.view', crop_id=str(crop._id)) }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Update Crop Record</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

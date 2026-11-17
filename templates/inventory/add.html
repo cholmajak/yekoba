@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Register Inventory Item - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Register Inventory SKU</h1>
+    <p class="page-desc">Add seeds, fertilizers, feeds, chemicals, tools, or fuel items to inventory</p>
+  </div>
+  <a href="{{ url_for('inventory.index') }}" class="btn btn-outline">&larr; Back to Inventory</a>
+</div>
+
+<div class="card" style="max-width: 840px;">
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('inventory.add') }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label" for="name">Item Name *</label>
+          <input type="text" id="name" name="name" class="form-control" 
+                 placeholder="e.g. Urea 46% Nitrogen, NPK 17:17:17, Dairy Meal 16%" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="sku">SKU Code (Optional)</label>
+          <input type="text" id="sku" name="sku" class="form-control" 
+                 placeholder="e.g. FERT-UREA-01 (leave blank to auto-generate)">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="category">Category *</label>
+          <select name="category" id="category" class="form-select" required>
+            {% for c in categories %}
+              <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="unit">Measurement Unit *</label>
+          <select name="unit" id="unit" class="form-select" required>
+            <option value="kg">kg</option>
+            <option value="bags (50kg)">bags (50kg)</option>
+            <option value="liters">liters</option>
+            <option value="bottles">bottles</option>
+            <option value="doses">doses</option>
+            <option value="pieces">pieces / units</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="quantity_on_hand">Initial Quantity on Hand</label>
+          <input type="number" step="0.1" id="quantity_on_hand" name="quantity_on_hand" class="form-control" value="0">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="min_stock_level">Minimum Reorder Level *</label>
+          <input type="number" step="0.1" id="min_stock_level" name="min_stock_level" class="form-control" value="10" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="unit_cost_ugx">Unit Cost / Price (UGX)</label>
+          <input type="number" id="unit_cost_ugx" name="unit_cost_ugx" class="form-control" placeholder="e.g. 140000">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="storage_location">Store Location / Warehouse</label>
+          <input type="text" id="storage_location" name="storage_location" class="form-control" placeholder="e.g. Store Room 1, Chemical Shed, Silo 3">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="supplier">Supplier / Agro-dealer</label>
+          <input type="text" id="supplier" name="supplier" class="form-control" placeholder="e.g. Bukoola Chemical Industries, Victoria Seeds">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="notes">Item Specifications & Application Notes</label>
+        <textarea id="notes" name="notes" class="form-control" placeholder="Usage dosage, expiry dates, batch lot numbers..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 10px;">
+        <a href="{{ url_for('inventory.index') }}" class="btn btn-outline">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Inventory Item</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

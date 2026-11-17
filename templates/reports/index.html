@@ -1,0 +1,313 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports & Analytics - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header no-print">
+  <div>
+    <h1 class="page-title">Reports & Farm Analytics</h1>
+    <p class="page-desc">Generate exportable financial summaries, crop production, inventory audits, and task metrics</p>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('reports.export_csv', type=report_type, start_date=start_date, end_date=end_date) }}" class="btn btn-primary">
+      ⬇️ Export CSV Report
+    </a>
+    <button onclick="window.print()" class="btn btn-outline">🖨️ Print / Save PDF</button>
+  </div>
+</div>
+
+<!-- Report Navigation Tabs & Date Range Filter -->
+<div class="card no-print" style="margin-bottom: 24px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('reports.index') }}" style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 2; min-width: 220px;">
+        <label class="form-label" style="font-size: 0.76rem;">Select Report Type</label>
+        <select name="type" class="form-select" onchange="this.form.submit()">
+          <option value="financial" {% if report_type == 'financial' %}selected{% endif %}>Financial Profit & Loss Statement (UGX)</option>
+          <option value="crops" {% if report_type == 'crops' %}selected{% endif %}>Crop Production & Harvest Yields</option>
+          <option value="livestock" {% if report_type == 'livestock' %}selected{% endif %}>Livestock Census & Health Breakdown</option>
+          <option value="inventory" {% if report_type == 'inventory' %}selected{% endif %}>Inventory Audit & Stock Movements</option>
+          <option value="tasks" {% if report_type == 'tasks' %}selected{% endif %}>Labor & Task Completion Performance</option>
+        </select>
+      </div>
+
+      <div style="flex: 1; min-width: 140px;">
+        <label class="form-label" style="font-size: 0.76rem;">Period From</label>
+        <input type="date" name="start_date" class="form-control" value="{{ start_date }}">
+      </div>
+
+      <div style="flex: 1; min-width: 140px;">
+        <label class="form-label" style="font-size: 0.76rem;">Period To</label>
+        <input type="date" name="end_date" class="form-control" value="{{ end_date }}">
+      </div>
+
+      <div>
+        <button type="submit" class="btn btn-primary">Generate Report</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ==========================================
+     Report 1: Financial Profit & Loss Statement
+     ========================================== -->
+{% if report_type == 'financial' %}
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">💰</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Period Income</div>
+      <div class="kpi-value" style="color: var(--primary);">{{ data.total_income | ugx }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box red">📉</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Period Expenses</div>
+      <div class="kpi-value" style="color: var(--danger);">{{ data.total_expenses | ugx }}</div>
+    </div>
+  </div>
+  <div class="kpi-card" style="border-left: 4px solid {% if data.net_profit >= 0 %}var(--primary){% else %}var(--danger){% endif %};">
+    <div class="kpi-icon-box {% if data.net_profit >= 0 %}green{% else %}red{% endif %}">
+      {% if data.net_profit >= 0 %}📈{% else %}⚠️{% endif %}
+    </div>
+    <div class="kpi-data">
+      <div class="kpi-title">Net Profit / Loss</div>
+      <div class="kpi-value" style="color: {% if data.net_profit >= 0 %}var(--primary){% else %}var(--danger){% endif %};">
+        {{ data.net_profit | ugx }}
+      </div>
+      <div class="kpi-sub">{{ start_date }} to {{ end_date }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Expense Category Breakdown Table -->
+<div class="card" style="margin-bottom: 24px;">
+  <div class="card-header">
+    <h3 class="card-title">Expense Breakdown by Category</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th style="text-align: right;">Total Amount (UGX)</th>
+          <th style="text-align: right;">% of Total Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if data.expense_categories %}
+          {% for ec in data.expense_categories %}
+          <tr>
+            <td><strong>{{ ec._id }}</strong></td>
+            <td style="text-align: right; color: var(--danger); font-weight: 600;">{{ ec.total | ugx }}</td>
+            <td style="text-align: right;">
+              {% if data.total_expenses > 0 %}
+                {{ ((ec.total / data.total_expenses) * 100)|round(1) }}%
+              {% else %}
+                0%
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="3" style="text-align: center; color: var(--text-muted);">No expenses recorded in this period.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==========================================
+     Report 2: Crop Production & Harvest Yields
+     ========================================== -->
+{% elif report_type == 'crops' %}
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">🌾</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Harvest Yield</div>
+      <div class="kpi-value">{{ data.total_yield | number }} <span style="font-size: 0.8rem;">units</span></div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">📦</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Sold Volume</div>
+      <div class="kpi-value">{{ data.total_sold | number }} <span style="font-size: 0.8rem;">units</span></div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🛒</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Remaining Stock to Sell</div>
+      <div class="kpi-value" style="color: var(--primary);">{{ data.total_available | number }} <span style="font-size: 0.8rem;">units</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Harvest Batches in Period</h3></div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Batch</th>
+          <th>Crop</th>
+          <th>Field</th>
+          <th>Harvest Date</th>
+          <th>Harvested Yield</th>
+          <th>Sold</th>
+          <th>Available</th>
+          <th>Quality Grade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in data.harvests %}
+        <tr>
+          <td><code>{{ h.batch_number }}</code></td>
+          <td><strong>{{ h.crop_name }}</strong></td>
+          <td>{{ h.field_plot }}</td>
+          <td>{{ h.harvest_date }}</td>
+          <td>{{ h.harvested_quantity }} {{ h.unit }}</td>
+          <td>{{ h.sold_quantity }} {{ h.unit }}</td>
+          <td><span class="badge badge-success">{{ h.available_for_sale }} {{ h.unit }}</span></td>
+          <td>{{ h.quality_grade }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==========================================
+     Report 3: Livestock Census & Health
+     ========================================== -->
+{% elif report_type == 'livestock' %}
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🐄</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Active Herd</div>
+      <div class="kpi-value">{{ data.total_heads }} heads</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">🩺</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Healthy Proportion</div>
+      <div class="kpi-value">{{ data.healthy }} heads</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box red">💉</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Requiring Treatment</div>
+      <div class="kpi-value" style="color: var(--danger);">{{ data.under_treatment }} heads</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Livestock Health & Census Roster</h3></div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Tag / Batch</th>
+          <th>Type</th>
+          <th>Breed</th>
+          <th>Quantity</th>
+          <th>Pen Location</th>
+          <th>Health Status</th>
+          <th>Treatments Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in data.animals %}
+        <tr>
+          <td><code>{{ a.tag_number }}</code></td>
+          <td><strong>{{ a.animal_type }}</strong></td>
+          <td>{{ a.breed }}</td>
+          <td>{{ a.quantity }}</td>
+          <td>{{ a.pen_location }}</td>
+          <td>
+            <span class="badge {% if a.health_status == 'Healthy' %}badge-success{% else %}badge-danger{% endif %}">
+              {{ a.health_status }}
+            </span>
+          </td>
+          <td>{{ (a.treatments or [])|length }} treatments</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==========================================
+     Report 4: Inventory Movements
+     ========================================== -->
+{% elif report_type == 'inventory' %}
+<div class="card">
+  <div class="card-header"><h3 class="card-title">Stock Audit Log ({{ data.total_movements }} entries)</h3></div>
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Timestamp</th>
+          <th>SKU</th>
+          <th>Item</th>
+          <th>Type</th>
+          <th>Qty</th>
+          <th>New Stock</th>
+          <th>Reason</th>
+          <th>Staff</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in data.movements %}
+        <tr>
+          <td>{{ m.timestamp.strftime('%Y-%m-%d %H:%M') if m.timestamp is not string else m.timestamp }}</td>
+          <td><code>{{ m.sku }}</code></td>
+          <td><strong>{{ m.item_name }}</strong></td>
+          <td><span class="badge {% if m.movement_type == 'USAGE_OUT' %}badge-danger{% else %}badge-success{% endif %}">{{ m.movement_type }}</span></td>
+          <td>{{ m.quantity }}</td>
+          <td>{{ m.new_stock }}</td>
+          <td>{{ m.reason or '-' }}</td>
+          <td>{{ m.performed_by }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==========================================
+     Report 5: Tasks & Labor
+     ========================================== -->
+{% elif report_type == 'tasks' %}
+<div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">📋</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Total Tasks</div>
+      <div class="kpi-value">{{ data.total_tasks }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box green">✅</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Completed Work</div>
+      <div class="kpi-value">{{ data.completed }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">⏳</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Pending / In-Progress</div>
+      <div class="kpi-value">{{ data.pending }}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

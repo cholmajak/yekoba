@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block title %}Employee Management - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Employee & Labor Management</h1>
+    <p class="page-desc">Track personnel, job responsibilities, attendance, and wage payments in UGX</p>
+  </div>
+  {% if current_role in ['Administrator', 'Farm Manager'] %}
+  <a href="{{ url_for('employees.add') }}" class="btn btn-primary">+ Register New Employee</a>
+  {% endif %}
+</div>
+
+<!-- Stats -->
+<div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 20px;">
+  <div class="kpi-card">
+    <div class="kpi-icon-box blue">👥</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Active Field Workers & Staff</div>
+      <div class="kpi-value">{{ total_active }}</div>
+    </div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon-box gold">🏖️</div>
+    <div class="kpi-data">
+      <div class="kpi-title">Staff On Leave</div>
+      <div class="kpi-value">{{ total_on_leave }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Search & Filter -->
+<div class="card" style="margin-bottom: 20px;">
+  <div class="card-body" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('employees.index') }}" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 2; min-width: 200px;">
+        <label class="form-label" style="font-size: 0.76rem;">Search Name / Code / Title / Phone</label>
+        <input type="text" name="search" class="form-control" placeholder="e.g. Mukasa, Tractor Operator, EMP-001..." value="{{ search }}">
+      </div>
+      <div style="flex: 1; min-width: 160px;">
+        <label class="form-label" style="font-size: 0.76rem;">Department</label>
+        <select name="department" class="form-select">
+          <option value="All">All Departments</option>
+          {% for d in departments %}
+            <option value="{{ d }}" {% if dept_filter == d %}selected{% endif %}>{{ d }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="flex: 1; min-width: 140px;">
+        <label class="form-label" style="font-size: 0.76rem;">Status</label>
+        <select name="status" class="form-select">
+          <option value="All" {% if status_filter == 'All' %}selected{% endif %}>All</option>
+          <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+          <option value="On Leave" {% if status_filter == 'On Leave' %}selected{% endif %}>On Leave</option>
+          <option value="Terminated" {% if status_filter == 'Terminated' %}selected{% endif %}>Terminated</option>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <a href="{{ url_for('employees.index') }}" class="btn btn-outline">Reset</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Employees Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Employee Code</th>
+          <th>Full Name</th>
+          <th>Job Title</th>
+          <th>Department</th>
+          <th>Phone</th>
+          <th>Monthly Salary (UGX)</th>
+          <th>Status</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if employees %}
+          {% for emp in employees %}
+          <tr>
+            <td><code>{{ emp.employee_code }}</code></td>
+            <td><strong>{{ emp.full_name }}</strong></td>
+            <td>{{ emp.job_title }}</td>
+            <td>{{ emp.department }}</td>
+            <td>{{ emp.phone }}</td>
+            <td>
+              {% if current_role in ['Administrator', 'Farm Manager'] %}
+                <strong>{{ emp.monthly_salary_ugx | ugx }}</strong>
+              {% else %}
+                <span style="color: var(--text-muted);">Confidential</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge 
+                {% if emp.status == 'Active' %}badge-success
+                {% elif emp.status == 'On Leave' %}badge-warning
+                {% else %}badge-neutral{% endif %}">
+                {{ emp.status }}
+              </span>
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <a href="{{ url_for('employees.view', emp_id=str(emp._id)) }}" class="btn btn-outline btn-sm">View Profile</a>
+              {% if current_role in ['Administrator', 'Farm Manager'] %}
+              <a href="{{ url_for('employees.edit', emp_id=str(emp._id)) }}" class="btn btn-outline btn-sm" style="color: var(--primary);">Edit</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No employee records found.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

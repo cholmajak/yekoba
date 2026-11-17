@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Stock Movements Audit Log - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Stock Movements Audit Log</h1>
+    <p class="page-desc">Chronological history of additions, usage deductions, and purchase receipts</p>
+  </div>
+  <a href="{{ url_for('inventory.index') }}" class="btn btn-outline">&larr; Back to Inventory</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date & Time</th>
+          <th>SKU</th>
+          <th>Item Name</th>
+          <th>Movement Type</th>
+          <th>Quantity Changed</th>
+          <th>Previous Stock</th>
+          <th>Resulting Stock</th>
+          <th>Reason / Reference</th>
+          <th>Staff User</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if logs %}
+          {% for log in logs %}
+          <tr>
+            <td style="white-space: nowrap;">
+              {% if log.timestamp is string %}
+                {{ log.timestamp }}
+              {% else %}
+                {{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}
+              {% endif %}
+            </td>
+            <td><code>{{ log.sku }}</code></td>
+            <td><strong>{{ log.item_name }}</strong></td>
+            <td>
+              <span class="badge 
+                {% if log.movement_type == 'RESTOCK_IN' %}badge-success
+                {% elif log.movement_type == 'USAGE_OUT' %}badge-danger
+                {% else %}badge-info{% endif %}">
+                {{ log.movement_type }}
+              </span>
+            </td>
+            <td>
+              <strong style="color: {% if log.movement_type == 'USAGE_OUT' %}var(--danger){% else %}var(--primary){% endif %};">
+                {% if log.movement_type == 'USAGE_OUT' %}−{% else %}+{% endif %}{{ log.quantity }}
+              </strong>
+            </td>
+            <td>{{ log.previous_stock }}</td>
+            <td><strong>{{ log.new_stock }}</strong></td>
+            <td>{{ log.reason or '-' }}</td>
+            <td>{{ log.performed_by }}</td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="9" style="text-align: center; padding: 36px; color: var(--text-muted);">
+              No stock movements recorded yet.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

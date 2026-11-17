@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}System Settings - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">Farm Settings & Database Diagnostics</h1>
+    <p class="page-desc">Configure enterprise parameters, primary currency (UGX), and inspect MongoDB database collections</p>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+  <!-- Left Column: Farm Profile Configuration Form -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Farm Enterprise Profile</h3>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('settings.index') }}">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label" for="farm_name">Farm Name *</label>
+              <input type="text" id="farm_name" name="farm_name" class="form-control" value="{{ settings.farm_name }}" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="owner_name">Owner / General Manager *</label>
+              <input type="text" id="owner_name" name="owner_name" class="form-control" value="{{ settings.owner_name }}" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="location">Farm Location (District / Region) *</label>
+              <input type="text" id="location" name="location" class="form-control" value="{{ settings.location }}" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="primary_phone">Primary Contact Phone</label>
+              <input type="text" id="primary_phone" name="primary_phone" class="form-control" value="{{ settings.primary_phone }}">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email">Official Email</label>
+              <input type="email" id="email" name="email" class="form-control" value="{{ settings.email or '' }}">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="total_land_acres">Total Farm Acreage (Acres)</label>
+              <input type="number" step="0.5" id="total_land_acres" name="total_land_acres" class="form-control" value="{{ settings.total_land_acres }}">
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn btn-primary">Save Settings</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Localization & Currency Info -->
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-header">
+        <h3 class="card-title">Localization & Currency Standard</h3>
+      </div>
+      <div class="card-body" style="font-size: 0.88rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Standard Currency</div>
+            <div style="font-weight: 700; color: var(--primary); font-size: 1.1rem;">Uganda Shilling (UGX)</div>
+            <div style="color: var(--text-muted); font-size: 0.78rem;">Symbol: USh</div>
+          </div>
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">System Timezone</div>
+            <div style="font-weight: 700; color: var(--text-dark); font-size: 1.1rem;">Africa/Kampala (EAT)</div>
+            <div style="color: var(--text-muted); font-size: 0.78rem;">UTC +3:00</div>
+          </div>
+          <div>
+            <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Primary Datastore</div>
+            <div style="font-weight: 700; color: var(--text-dark); font-size: 1.1rem;">MongoDB NoSQL</div>
+            <div style="color: var(--text-muted); font-size: 0.78rem;">PyMongo 4.x Connector</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: MongoDB Collection Census -->
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">MongoDB Collection Records</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Collection Name</th>
+              <th style="text-align: right;">Document Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for coll_name, count in stats.items() %}
+            <tr>
+              <td><code>{{ coll_name }}</code></td>
+              <td style="text-align: right;"><strong>{{ count }}</strong></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoice {{ sale.invoice_number }} - {{ farm_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header no-print">
+  <div>
+    <h1 class="page-title">Sales Invoice #{{ sale.invoice_number }}</h1>
+    <p class="page-desc">Customer: <strong>{{ sale.customer_name }}</strong> • Date: {{ sale.sale_date }}</p>
+  </div>
+  <div style="display: flex; gap: 10px;">
+    <a href="{{ url_for('sales.index') }}" class="btn btn-outline">&larr; Back to Sales</a>
+    <button onclick="window.print()" class="btn btn-primary">🖨️ Print Invoice Receipt</button>
+  </div>
+</div>
+
+<div class="card" style="max-width: 800px; margin: 0 auto; padding: 32px; background: #ffffff;">
+  <!-- Invoice Header -->
+  <div style="display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary); padding-bottom: 20px; margin-bottom: 24px;">
+    <div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="{{ url_for('static', filename='images/logo.svg') }}" style="width: 44px; height: 44px;" alt="Logo">
+        <div>
+          <h2 style="font-size: 1.4rem; color: var(--text-dark); margin: 0;">{{ farm_name }}</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Central Uganda • Tel: +256 772 123 456</p>
+        </div>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <h3 style="font-size: 1.3rem; color: var(--primary); margin: 0;">OFFICIAL INVOICE</h3>
+      <p style="font-size: 0.85rem; color: var(--text-dark); margin: 4px 0 0;"><strong>Invoice #:</strong> {{ sale.invoice_number }}</p>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Date: {{ sale.sale_date }}</p>
+    </div>
+  </div>
+
+  <!-- Customer & Payment Details -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+    <div>
+      <h4 style="font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Billed To:</h4>
+      <p style="font-size: 1.05rem; font-weight: 700; color: var(--text-dark); margin: 0;">{{ sale.customer_name }}</p>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0;">Phone: {{ sale.customer_phone or 'N/A' }}</p>
+    </div>
+    <div style="text-align: right;">
+      <h4 style="font-size: 0.82rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;">Payment Summary:</h4>
+      <p style="font-size: 0.88rem; color: var(--text-dark); margin: 0;">Method: <strong>{{ sale.payment_method }}</strong></p>
+      <p style="margin: 4px 0 0;">
+        Status: 
+        <span class="badge {% if sale.payment_status == 'Paid' %}badge-success{% elif sale.payment_status == 'Pending' %}badge-danger{% else %}badge-warning{% endif %}">
+          {{ sale.payment_status }}
+        </span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <table class="data-table" style="margin-bottom: 24px;">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th style="text-align: center;">Quantity</th>
+        <th style="text-align: right;">Unit Price (UGX)</th>
+        <th style="text-align: right;">Line Total (UGX)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <strong>{{ sale.product_name }}</strong><br>
+          <span style="font-size: 0.78rem; color: var(--text-muted);">Source: {{ sale.item_source|capitalize }} produce</span>
+        </td>
+        <td style="text-align: center;">{{ sale.quantity }} {{ sale.unit }}</td>
+        <td style="text-align: right;">{{ sale.unit_price | ugx }}</td>
+        <td style="text-align: right; font-weight: 700;">{{ sale.total_amount | ugx }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Total Summary -->
+  <div style="display: flex; justify-content: flex-end; margin-bottom: 24px;">
+    <div style="width: 280px; border-top: 2px solid var(--border); padding-top: 12px;">
+      <div style="display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: 800; color: var(--primary);">
+        <span>Total Due:</span>
+        <span>{{ sale.total_amount | ugx }}</span>
+      </div>
+    </div>
+  </div>
+
+  {% if sale.notes %}
+  <div style="background: var(--bg-main); padding: 12px 16px; border-radius: 6px; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 24px;">
+    <strong>Notes:</strong> {{ sale.notes }}
+  </div>
+  {% endif %}
+
+  <!-- Invoice Footer -->
+  <div style="border-top: 1px dashed var(--border); padding-top: 18px; text-align: center; font-size: 0.78rem; color: var(--text-light);">
+    <p>Thank you for doing business with GreenHarvest Farm Management System!</p>
+    <p>Issued by: {{ sale.recorded_by }} • Database ID: <code>{{ str(sale._id) }}</code></p>
+  </div>
+</div>
+{% endblock %}
